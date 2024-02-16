@@ -50,7 +50,7 @@
       this.position = { x: x, y: y }
     },
     nextStitch: function(current_position, current_direction) {
-      if (current_position.y == 0 &&  current_position.x == 3) {
+      if (current_position.y == 0 &&  current_position.x + 1 == this.pattern[0].length) {
         alert('You are done!');
       }
       if (current_direction == 'right_to_left') {
