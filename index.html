@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <title>Stitch Tracker</title>
+  <style>
+    .done {
+      background-color: green;
+      color: white;
+    }
+
+    .current {
+      background-color: yellow;
+      color: black;
+    }
+
+    td {
+      border: 1px solid black;
+      text-align: center;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body x-data="{
+    pattern: [],
+    spreadsheet_id: '',
+    position: { x: 0, y: 0 },
+    currentStitch: '',
+    direction: 'right_to_left',
+    fetchPattern: async function(spreadsheet_id) {
+      opensheetUrl = 'https://opensheet.elk.sh/' + spreadsheet_id + '/Pattern'
+      let response = await fetch(opensheetUrl)
+      response_json = await response.json()
+      response_json.forEach(row => {
+        this.pattern.push(Object.values(row))
+      })
+      this.position = { x: this.pattern[0].length - 1, y: this.pattern.length - 1 }
+    },
+    registerStitch: function(x,y) {
+      this.position = { x: x, y: y }
+    },
+    nextStitch: function(current_position, current_direction) {
+      if (current_position.y == 0 &&  current_position.x == 3) {
+        alert('You are done!');
+      }
+      if (current_direction == 'right_to_left') {
+        <!-- last element on the left -->
+        if (current_position.x == 0) {
+          this.position.y--;
+          this.direction = 'left_to_right';
+        } else if (current_position.x > 0) {
+          this.position.x--;
+        }
+      } else if (current_direction == 'left_to_right') {
+          <!-- last element on the  right -->
+        if (current_position.x + 1 == this.pattern[0].length) {
+          this.position.y--;
+          this.direction = 'right_to_left';
+        } else if (current_position.x + 1 < this.pattern[0].length) {
+          this.position.x++;
+        }
+      }
+    }
+  }" @keyup.space="nextStitch(position, direction)">
+  </h1>
+  <div x-show="pattern.length == 0">
+    <input x-model="spreadsheet_id" type="text" placeholder="google sheet id">
+    <button x-on:click="fetchPattern(spreadsheet_id)">Load Pattern</button>
+  </div>
+  <div x-show="pattern.length > 0">
+    <table>
+      <template x-for="(row, row_index) in pattern">
+        <tr>
+          <template x-for="(stitch, stitch_index) in row">
+            <td x-data="{
+              done: false,
+              current: false,
+              isDone: function(x,y) {
+                if (direction == 'right_to_left') {
+                  if (position.y == y && position.x < x) {
+                    this.done = true;
+                  } else if (position.y < y) {
+                    this.done = true;
+                  } else {
+                    this.done = false;
+                  }
+                } else if (direction == 'left_to_right') {
+                  if (position.y == y && position.x > x) {
+                    this.done = true;
+                  } else if (position.y < y) {
+                    this.done = true;
+                  } else {
+                    this.done = false;
+                  }
+                }
+              },
+              isCurrent: function(x,y) {
+                if (position.y == y && position.x == x) {
+                  this.current = true;
+                  this.currentStitch = pattern[y][x];
+                } else {
+                  this.current = false;
+                }
+              }
+            }" x-on:click="registerStitch(stitch_index, row_index);"
+              x-effect="isDone(stitch_index, row_index); isCurrent(stitch_index, row_index)"
+              :class="{ 'done': done, 'current': current }">
+              <span x-text="stitch"></span>
+            </td>
+          </template>
+        </tr>
+      </template>
+    </table>
+    <div x-text="'Current position: ' + position.x + ', ' + position.y"></div>
+    <div x-text="'Current direction: ' + direction "></div>
+    <div x-text="'Current stitch: ' + currentStitch "></div>
+  </div>
+
+</body>
+
+</html>
